@@ -1,0 +1,14 @@
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=14.0.0
+requests>=2.31.0
+python-dateutil>=2.8.0
+jupyter>=1.0.0
+notebook>=7.0.0
+db-dtypes>=1.2.0
+
+# Opcional: Base dos Dados (BigQuery público)
+basedosdados>=1.6.0
+
+# Opcional: Kafka local (streaming)
+# kafka-python>=2.0.2

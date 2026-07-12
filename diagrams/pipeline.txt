@@ -1,0 +1,19 @@
+# Diagrama textual da pipeline (importe em Lucid/Draw.io se quiser arte final)
+
+```
+[Base dos Dados / Sample CSV] ----batch----> [Bronze SOR / data/bronze]
+[MySQL dims] ------------------batch---->        |
+[Eventos JSON NoSQL] --Kafka/file-sink-->        |
+                                                 v
+                                         [Silver SOT]
+                                                 |
+                                      qualidade/validate
+                                                 v
+                                         [Gold SPEC]
+                                    municipio | UF | Brasil
+                                    evolucao temporal
+                                                 v
+                                      Dashboards / IA
+```
+
+Ver também `docs/ARQUITETURA.md` (mermaid).

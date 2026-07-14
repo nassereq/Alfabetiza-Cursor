@@ -1,19 +1,25 @@
-# Diagrama textual da pipeline (importe em Lucid/Draw.io se quiser arte final)
+# Diagrama da pipeline
 
-```
-[Base dos Dados / Sample CSV] ----batch----> [Bronze SOR / data/bronze]
-[MySQL dims] ------------------batch---->        |
-[Eventos JSON NoSQL] --Kafka/file-sink-->        |
-                                                 v
-                                         [Silver SOT]
-                                                 |
-                                      qualidade/validate
-                                                 v
-                                         [Gold SPEC]
-                                    municipio | UF | Brasil
-                                    evolucao temporal
-                                                 v
-                                      Dashboards / IA
+```text
+[Base dos Dados / BigQuery] --batch--> [Bronze] --+
+[MySQL dims] ----------------batch--> [Bronze] --+--> [Silver] --> qualidade --> [Gold]
+[Eventos JSON] --Kafka/file-sink----> [Bronze] --+                    |
+                                                                  municipio / UF / Brasil
+                                                                  evolucao temporal
+                                                                        |
+                                                              reports/ + BI / IA
 ```
 
-Ver também `docs/ARQUITETURA.md` (mermaid).
+Versão Mermaid (também em `docs/ARQUITETURA.md`):
+
+```mermaid
+flowchart LR
+  BD[Base_dos_Dados] --> Batch
+  MY[MySQL] --> Batch
+  EV[Eventos] --> Stream
+  Batch --> Bronze
+  Stream --> Bronze
+  Bronze --> Silver --> Gold --> Reports[reports_executivo]
+```
+
+Para arte final: importar este fluxo no Draw.io / Lucidchart.

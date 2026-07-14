@@ -74,9 +74,13 @@ def run(project_id: str) -> dict:
         "job_id": job.job_id,
         "location": job.location,
         "state": job.state,
+        # Timestamps do job no servidor (None se a API não preencher — sem misturar com cliente)
         "created": job.created.isoformat() if job.created else None,
-        "started": job.started.isoformat() if job.started else started.isoformat(),
-        "ended": job.ended.isoformat() if job.ended else finished.isoformat(),
+        "started": job.started.isoformat() if job.started else None,
+        "ended": job.ended.isoformat() if job.ended else None,
+        # Relógio do cliente (round-trip local); não substituem started/ended do job
+        "client_request_started": started.isoformat(),
+        "client_request_finished": finished.isoformat(),
         "total_bytes_processed": job.total_bytes_processed,
         "total_bytes_billed": job.total_bytes_billed,
         "cache_hit": job.cache_hit,
@@ -87,7 +91,9 @@ def run(project_id: str) -> dict:
         "notes": (
             "Execução real em GCP BigQuery sobre dados públicos da Base dos Dados. "
             "O medalhão local (Parquet) consome o recorte exportado; "
-            "em produção o mesmo SQL alimentaria GCS/Glue ou materialização Spec."
+            "em produção o mesmo SQL alimentaria GCS/Glue ou materialização Spec. "
+            "Campos started/ended são do job no servidor; "
+            "client_request_* e latency_seconds medem o round-trip local."
         ),
     }
 

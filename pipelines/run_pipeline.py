@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT))
 
 from pipelines.batch import load_bronze, load_gold, load_silver  # noqa: E402
 from pipelines.config import LOGS  # noqa: E402
+from pipelines.reports import generate_summary  # noqa: E402
 from pipelines.streaming import producer_eventos  # noqa: E402
 from quality import validate  # noqa: E402
 
@@ -61,7 +62,14 @@ def main() -> None:
     }
     path = LOGS / "pipeline_summary.json"
     path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
-    log.info("Pipeline OK summary=%s", path)
+
+    reports = generate_summary.run()
+    summary["reports"] = {
+        "executive_md": reports.get("executive_md"),
+        "gold_preview_files": reports.get("gold_preview_files"),
+    }
+    path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    log.info("Pipeline OK summary=%s | relatório=%s", path, reports.get("executive_md"))
     if not quality.get("passed"):
         raise SystemExit(1)
 

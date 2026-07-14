@@ -1,0 +1,112 @@
+{
+  "ts": "2026-07-14T19:15:29.636972+00:00",
+  "passed": true,
+  "checks": [
+    {
+      "check": "duplicidade",
+      "table": "uf",
+      "keys": [
+        "id_uf"
+      ],
+      "duplicates": 0,
+      "ok": true
+    },
+    {
+      "check": "duplicidade",
+      "table": "municipio",
+      "keys": [
+        "id_municipio"
+      ],
+      "duplicates": 0,
+      "ok": true
+    },
+    {
+      "check": "duplicidade",
+      "table": "meta_municipio",
+      "keys": [
+        "ano",
+        "id_municipio"
+      ],
+      "duplicates": 0,
+      "ok": true
+    },
+    {
+      "check": "duplicidade",
+      "table": "indicador_municipio",
+      "keys": [
+        "ano",
+        "id_municipio"
+      ],
+      "duplicates": 0,
+      "ok": true
+    },
+    {
+      "check": "duplicidade",
+      "table": "alunos",
+      "keys": [
+        "id_aluno",
+        "ano"
+      ],
+      "duplicates": 0,
+      "ok": true
+    },
+    {
+      "check": "valores_ausentes",
+      "table": "indicador_municipio",
+      "nulls": {
+        "ano": 0,
+        "id_municipio": 0,
+        "pct_alfabetizados": 0
+      },
+      "ok": true
+    },
+    {
+      "check": "valores_ausentes",
+      "table": "municipio",
+      "nulls": {
+        "id_municipio": 0,
+        "id_uf": 0,
+        "sigla_uf": 0
+      },
+      "ok": true
+    },
+    {
+      "check": "chave_relacionamento",
+      "table": "municipio→uf",
+      "child_key": "id_uf",
+      "parent_key": "id_uf",
+      "orphans": 0,
+      "ok": true
+    },
+    {
+      "check": "chave_relacionamento",
+      "table": "indicador→municipio",
+      "child_key": "id_municipio",
+      "parent_key": "id_municipio",
+      "orphans": 0,
+      "ok": true
+    },
+    {
+      "check": "chave_relacionamento",
+      "table": "alunos→municipio",
+      "child_key": "id_municipio",
+      "parent_key": "id_municipio",
+      "orphans": 0,
+      "ok": true
+    },
+    {
+      "check": "consistencia_entre_tabelas",
+      "detail": "anos em indicador sem meta_municipio",
+      "anos_sem_meta": [],
+      "ok": true
+    },
+    {
+      "check": "valores_ausentes",
+      "table": "indicador_meta_integrado",
+      "nulls": {
+        "meta_pct": 0
+      },
+      "ok": true
+    }
+  ]
+}

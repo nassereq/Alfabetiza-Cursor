@@ -1,0 +1,35 @@
+{
+  "started": "2026-07-14T19:15:28.845721+00:00",
+  "finished": "2026-07-14T19:15:29.872726+00:00",
+  "latency_seconds": 1.02701,
+  "fonte": "raw",
+  "bronze_entities": [
+    "uf",
+    "municipio",
+    "meta_brasil",
+    "meta_uf",
+    "meta_municipio",
+    "alunos",
+    "indicador_municipio"
+  ],
+  "silver_entities": [
+    "uf",
+    "municipio",
+    "meta_brasil",
+    "meta_uf",
+    "meta_municipio",
+    "indicador_municipio",
+    "alunos",
+    "indicador_meta_integrado"
+  ],
+  "gold_tables": [
+    "indicador_alfabetizacao_municipio",
+    "comparativo_meta_resultado_uf",
+    "comparativo_meta_resultado_brasil",
+    "evolucao_temporal_municipio",
+    "evolucao_temporal_uf",
+    "evolucao_temporal_brasil"
+  ],
+  "quality_passed": true,
+  "streaming": true
+}

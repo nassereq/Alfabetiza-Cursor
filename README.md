@@ -147,7 +147,11 @@ Regenerar:
 
 ## Vídeo executivo
 
-Roteiro ≤ 5 min: [`docs/ROTEIRO_VIDEO.md`](docs/ROTEIRO_VIDEO.md).
+Roteiro ≤ 5 min: [`docs/ROTEIRO_VIDEO.md`](docs/ROTEIRO_VIDEO.md).  
+**Slides (PPTX):** [`docs/Apresentacao_Tech_Challenge_Fase2_Alfabetiza.pptx`](docs/Apresentacao_Tech_Challenge_Fase2_Alfabetiza.pptx)  
+Espelho Markdown: [`docs/APRESENTACAO_SLIDES.md`](docs/APRESENTACAO_SLIDES.md)
+
+Regenerar slides: `python scripts/generate_apresentacao_pptx.py`
 
 ## Mapa das aulas
 

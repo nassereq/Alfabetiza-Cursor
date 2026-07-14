@@ -63,6 +63,42 @@ flowchart LR
 | Batch vs streaming | Batch para históricos; streaming para microatualizações do indicador | Batch = barato e simples; streaming = frescor com mais ops |
 | Data lake vs warehouse | Lake S3/Parquet + tabelas Gold analíticas | Lake flexível/custo baixo; warehouse (ex. Athena/BigQuery) melhora SQL ad-hoc |
 | Custo vs performance | Glue/Databricks sob demanda + Parquet particionado | Menos idle cost; queries podem ser mais lentas que cluster sempre ligado |
+| GCP vs AWS | **GCP BigQuery** para origem (Base dos Dados) + evidência real; **AWS Glue/S3** como caminho de deploy alinhado à aula ETL | GCP já paga o billing da consulta pública; AWS espelha SOR/SOT/SPEC da disciplina |
+
+## Implementação em nuvem (Estágio 8)
+
+### Caminho escolhido: GCP (evidência real) + template AWS (aula)
+
+```mermaid
+flowchart TB
+  subgraph gcp [GCP]
+    BQ[(BigQuery_basedosdados)]
+    BILL[billing_project_aluno]
+  end
+  subgraph local_or_aws [Medalhao]
+    Bronze[Bronze_SOR]
+    Silver[Silver_SOT]
+    Gold[Gold_SPEC]
+  end
+  BQ -->|query_job| BILL
+  BILL -->|CSV_Parquet| Bronze
+  Bronze --> Silver --> Gold
+```
+
+| Peça | Onde | Status |
+|------|------|--------|
+| Origem cloud | BigQuery `br_inep_avaliacao_alfabetizacao` | Executado — job ID em `reports/cloud_evidence/` |
+| Billing | Projeto GCP `alfabetiza-fiap-t-challenge-2` | Ativo |
+| Medalhão local | `data/bronze|silver|gold` Parquet | Produção didática |
+| Deploy AWS (aula) | S3 SOR/SOT/SPEC + Glue template | `pipelines/batch/glue_jobs_template.py` + `infra/README.md` |
+
+Reproduzir evidência:
+
+```powershell
+python -m pipelines.cloud.evidence_bigquery
+```
+
+Artefatos: `reports/cloud_evidence/EVIDENCIA_CLOUD.md` e `bigquery_job_evidence.json`.
 
 ## Monitoramento
 

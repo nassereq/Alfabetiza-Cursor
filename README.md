@@ -24,7 +24,7 @@ Ingestão híbrida → medalhão → consumo analítico. Diagrama e trade-offs: 
 | **Silver** | Limpeza, chaves, integração indicador×meta |
 | **Gold** | Indicador municipal, meta×resultado (UF/Brasil), evolução temporal |
 
-**Cloud:** AWS S3 SOR/SOT/SPEC + Glue (padrão da aula). **Dev local:** Parquet em `data/`. **Streaming:** Kafka ou file-sink. **Dims:** MySQL (`sql/`).
+**Cloud:** evidência real em **GCP BigQuery** (Base dos Dados) + template **AWS** S3 SOR/SOT/SPEC + Glue (padrão da aula). **Dev local:** Parquet em `data/`. **Streaming:** Kafka ou file-sink. **Dims:** MySQL (`sql/`).
 
 ## Tecnologias
 
@@ -32,7 +32,8 @@ Ingestão híbrida → medalhão → consumo analítico. Diagrama e trade-offs: 
 |------------|-----|----------------|
 | Python / Pandas / PyArrow | Pipeline local | Rápido, reproduzível, barato |
 | Parquet particionado | Lake | FinOps + performance de scan |
-| AWS Glue + S3 | Cloud | Mesmo modelo da disciplina ETL |
+| AWS Glue + S3 | Cloud (template aula) | Mesmo modelo da disciplina ETL |
+| GCP BigQuery | Origem + evidência cloud | Dataset público Base dos Dados; job com `job_id` |
 | Kafka | Streaming | Aula 02_Kafka |
 | MySQL | Origens relacionais | Disciplina de BD |
 | JSON eventos tipados | NoSQL-like | Padrão DynamoDB Streams da aula Big Data |
@@ -96,6 +97,14 @@ Execute [`sql/01_dimensoes_mysql.sql`](sql/01_dimensoes_mysql.sql) no DBeaver e 
 ## Monitoramento e FinOps
 
 [`docs/FINOPS_E_MONITORAMENTO.md`](docs/FINOPS_E_MONITORAMENTO.md) — práticas de custo, estimativa mensal e sinais de observabilidade.
+
+### Evidência cloud (GCP)
+
+```powershell
+python -m pipelines.cloud.evidence_bigquery
+```
+
+Gera `reports/cloud_evidence/` com **Job ID** BigQuery. Arquitetura e trade-offs: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md). Infra: [`infra/README.md`](infra/README.md).
 
 ## Aplicação em IA
 

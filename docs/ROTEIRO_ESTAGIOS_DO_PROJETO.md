@@ -20,7 +20,7 @@ Organize o trabalho em estágios. Não pule a ordem na primeira vez.
 | 5 | Material didático e roteiro de vídeo | Feito |
 | 6 | Git com branches / merges estilo PR | Feito (local) |
 | 7 | Trocar amostras pela Base dos Dados real | **Feito** (municipio/uf + pipeline `--fonte raw`) |
-| 8 | Evidência de cloud (AWS/GCP/Azure) | **A fazer** |
+| 8 | Evidência de cloud (AWS/GCP/Azure) | **Feito** (GCP BigQuery + job_id) |
 | 9 | Publicar GitHub com PRs reais | **Feito** (https://github.com/nassereq/Alfabetiza-Cursor) |
 | 10 | Vídeo executivo + entrega no AVA | **A fazer** |
 
@@ -245,12 +245,16 @@ Atender “implementar em AWS / GCP / Azure” (não só código local).
 3. **Mínimo defensável:** arquitetura documentada + template executável + *prints* / log de uma execução cloud.
 
 ### Critério de pronto
-- [ ] README com diagrama cloud e trade-offs
-- [ ] Pelo menos uma evidência de execução/deploy (print, log, job ID)
-- [ ] Seção FinOps com estimativa realista
+- [x] README com diagrama cloud e trade-offs
+- [x] Pelo menos uma evidência de execução/deploy (print, log, job ID)
+- [x] Seção FinOps com estimativa realista
+
+**Evidência:** `python -m pipelines.cloud.evidence_bigquery` → `reports/cloud_evidence/`  
+Job de referência: `d3ee0480-757f-4ab4-be1f-2f1edfe66c8a` (GCP BigQuery).
 
 ### Já existe como base
 - `pipelines/batch/glue_jobs_template.py`
+- `pipelines/cloud/evidence_bigquery.py`
 - `infra/README.md`
 - `docs/ARQUITETURA.md`
 
@@ -303,7 +307,7 @@ Faça nesta sequência (com calma):
 1. ~~**Estágio 7** — Project ID Google + extrair `municipio`/`uf`~~ **feito**
 2. ~~Mapear colunas / adaptar Bronze/Silver~~ **feito** (`--fonte raw`)
 3. ~~**Estágio 9** — publicar GitHub~~ **feito** (https://github.com/nassereq/Alfabetiza-Cursor)
-4. **Estágio 8** — evidência mínima de cloud
+4. ~~**Estágio 8** — evidência mínima de cloud~~ **feito** (GCP BigQuery)
 5. **Estágio 10** — vídeo + AVA
 6. Opcional: extrair tabela `alunos` (com `limit=`) e enriquecer nomes IBGE
 

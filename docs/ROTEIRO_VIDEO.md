@@ -2,7 +2,10 @@
 
 Linguagem para liderança / stakeholders. Sem código na tela.
 
-**Duração-alvo:** 4 min 30 s – 5 min.
+**Duração-alvo:** 4 min 30 s – 5 min.  
+**Slides:** [`Apresentacao_Tech_Challenge_Fase2_Alfabetiza.pptx`](Apresentacao_Tech_Challenge_Fase2_Alfabetiza.pptx) · espelho Markdown: [`APRESENTACAO_SLIDES.md`](APRESENTACAO_SLIDES.md)
+
+**Sugestão de uso no vídeo:** capa → problema (slide 5) → arquitetura (7–8) → 1 resultado Gold (9 ou 10) → IA (13) → fechamento. Não precisa narrar todos os 17 slides.
 
 ---
 

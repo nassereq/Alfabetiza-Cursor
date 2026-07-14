@@ -268,9 +268,12 @@ Histórico Git **visível na internet**, com Pull Requests.
 4. Colar o link do repo no README e no AVA.
 
 ### Critério de pronto
-- [ ] Repo público abre sem login
-- [ ] Pelo menos 1–2 PRs mergeados com descrição
-- [ ] Commits mostram evolução (bronze → silver → gold → docs)
+- [x] Repo público abre sem login
+- [x] Pelo menos 1–2 PRs mergeados com descrição
+- [x] Commits mostram evolução (bronze → silver → gold → docs)
+
+Repo: https://github.com/nassereq/Alfabetiza-Cursor  
+PR mergeado: https://github.com/nassereq/Alfabetiza-Cursor/pull/1
 
 ---
 
@@ -299,7 +302,7 @@ Faça nesta sequência (com calma):
 
 1. ~~**Estágio 7** — Project ID Google + extrair `municipio`/`uf`~~ **feito**
 2. ~~Mapear colunas / adaptar Bronze/Silver~~ **feito** (`--fonte raw`)
-3. **Estágio 9** — publicar GitHub (pode ser em paralelo)
+3. ~~**Estágio 9** — publicar GitHub~~ **feito** (https://github.com/nassereq/Alfabetiza-Cursor)
 4. **Estágio 8** — evidência mínima de cloud
 5. **Estágio 10** — vídeo + AVA
 6. Opcional: extrair tabela `alunos` (com `limit=`) e enriquecer nomes IBGE

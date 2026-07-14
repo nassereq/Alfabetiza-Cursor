@@ -3,6 +3,7 @@
 Pipeline **batch + streaming** em **arquitetura medalhão** (Bronze → Silver → Gold) para o **Indicador Criança Alfabetizada**, com qualidade de dados, FinOps e preparação para análises/IA.
 
 **Curso:** POSTECH / FIAP — AI Scientist  
+**Repositório:** https://github.com/nassereq/Alfabetiza-Cursor  
 **Bases didáticas da turma:** [Arquitetura de Big Data](https://github.com/AnaRaquelCafe/POSTECH_AI_SCIENTIST/tree/main/Fase%202/Arquitetura%20de%20Big%20Data) · [ETL Pipelines](https://github.com/AnaRaquelCafe/POSTECH_AI_SCIENTIST/tree/main/Fase%202/ETL%20Pipelines) · [Bancos relacionais](https://github.com/AnaRaquelCafe/POSTECH_AI_SCIENTIST/tree/main/Fase%202/Banco%20de%20dados%20relacionais%20para%20cientistas%20de%20dados) · [NoSQL](https://github.com/AnaRaquelCafe/POSTECH_AI_SCIENTIST/tree/main/Fase%202/NoSQL%20para%20ci%C3%AAncia%20de%20dados)
 
 ---
@@ -44,12 +45,31 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 
-# Pipeline completa (batch + streaming simulado + qualidade + gold)
+# Pipeline com amostras sintéticas (offline)
 python -m pipelines.run_pipeline --with-streaming
 
 # Health check
 python -m pipelines.monitor_health
 ```
+
+### Base dos Dados (dados reais)
+
+Dataset: [`br_inep_avaliacao_alfabetizacao`](https://basedosdados.org/dataset/073a39d4-89cf-4068-b1e8-34ed0d9c0b72) — tabelas `municipio` e `uf`.
+
+Requer Project ID GCP com BigQuery ([guia de acesso](https://basedosdados.org/docs/access_data_bq)). O projeto usado no desenvolvimento: `alfabetiza-fiap-t-challenge-2` (ou `BD_BILLING_PROJECT_ID`).
+
+```bash
+# Extrai brutos + mapeia para entidades da pipeline em data/raw/
+python -m pipelines.batch.fetch_basedosdados
+
+# Ou só mapeia se bd_municipio.csv / bd_uf.csv já existirem
+python -m pipelines.batch.map_basedosdados
+
+# Pipeline com dados reais
+python -m pipelines.run_pipeline --fonte raw --with-streaming
+```
+
+Mapeamento principal: `taxa_alfabetizacao` → `pct_alfabetizados` (filtro `serie=2`, `rede=5`). Metas seguem trajetória didática até 100% em 2030 (as tabelas BD não trazem coluna de meta).
 
 Saídas:
 
@@ -99,7 +119,22 @@ Alfabetiza-Cursor/
 
 ## Git e PRs
 
-O desenvolvimento usa branches `feat/*` e PRs para `main`, com commits descritivos por camada (bronze → silver → gold → docs), conforme exigido no Tech Challenge.
+Repositório público: https://github.com/nassereq/Alfabetiza-Cursor  
+
+O desenvolvimento usa branches `feat/*` e Pull Requests para `main`, com commits descritivos por camada (bronze → silver → gold → Base dos Dados → docs), conforme exigido no Tech Challenge.
+
+## Guias didáticos (PDF)
+
+1. **Resumo** (leitura rápida / voz): [`docs/Guia_Didatico_Tech_Challenge_Fase2_Alfabetizacao.pdf`](docs/Guia_Didatico_Tech_Challenge_Fase2_Alfabetizacao.pdf)  
+2. **Extensivo** (4 aulas POSTECH + caminho até a entrega): [`docs/Guia_Extensivo_Aulas_POSTECH_e_Tech_Challenge_Fase2.pdf`](docs/Guia_Extensivo_Aulas_POSTECH_e_Tech_Challenge_Fase2.pdf)
+
+**Roteiro por estágios** (Markdown): [`docs/ROTEIRO_ESTAGIOS_DO_PROJETO.md`](docs/ROTEIRO_ESTAGIOS_DO_PROJETO.md)  
+**Roteiro por estágios** (PDF, leitura em voz): [`docs/Roteiro_Estagios_Tech_Challenge_Fase2.pdf`](docs/Roteiro_Estagios_Tech_Challenge_Fase2.pdf)
+
+Regenerar:
+`python scripts/generate_guia_didatico_pdf.py`  
+`python scripts/generate_guia_extensivo_pdf.py`  
+`python scripts/generate_roteiro_estagios_pdf.py`
 
 ## Vídeo executivo
 

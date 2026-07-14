@@ -19,7 +19,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from pipelines.config import BRONZE, KAFKA, LOGS, SAMPLE  # noqa: E402
+from pipelines.config import BRONZE, KAFKA, LOGS, RAW, SAMPLE  # noqa: E402
 from pipelines.batch.generate_sample_data import build_samples  # noqa: E402
 
 logging.basicConfig(
@@ -29,14 +29,21 @@ logging.basicConfig(
 log = logging.getLogger("stream-producer")
 
 
-def _ensure_sample() -> pd.DataFrame:
+def _load_indicador(fonte: str = "sample") -> pd.DataFrame:
+    if fonte == "raw":
+        path = RAW / "indicador_municipio.csv"
+        if not path.exists():
+            raise FileNotFoundError(
+                f"{path} ausente. Rode: python -m pipelines.batch.fetch_basedosdados"
+            )
+        return pd.read_csv(path, dtype=str)
     if not (SAMPLE / "indicador_municipio.csv").exists():
         build_samples()
     return pd.read_csv(SAMPLE / "indicador_municipio.csv", dtype=str)
 
 
-def build_events(n: int = 10) -> list[dict]:
-    df = _ensure_sample()
+def build_events(n: int = 10, fonte: str = "sample") -> list[dict]:
+    df = _load_indicador(fonte=fonte)
     # pega os últimos municípios do ano mais recente e simula micro-atualizações
     latest_ano = df["ano"].astype(int).max()
     base = df[df["ano"].astype(int) == latest_ano].head(n)
@@ -46,6 +53,9 @@ def build_events(n: int = 10) -> list[dict]:
         pct = float(row["pct_alfabetizados"])
         delta = ((i % 5) - 2) * 0.35
         new_pct = max(5.0, min(99.0, round(pct + delta, 2)))
+        n_av = row.get("n_avaliados")
+        if n_av is None or str(n_av).strip() in ("", "nan", "None", "<NA>"):
+            n_av = "0"
         events.append(
             {
                 "eventID": f"evt-{int(time.time())}-{i}",
@@ -59,8 +69,8 @@ def build_events(n: int = 10) -> list[dict]:
                     "sigla_uf": {"S": str(row["sigla_uf"])},
                     "nome_municipio": {"S": str(row["nome_municipio"])},
                     "pct_alfabetizados": {"N": str(new_pct)},
-                    "ponto_corte": {"N": str(row["ponto_corte"])},
-                    "n_avaliados": {"N": str(row["n_avaliados"])},
+                    "ponto_corte": {"N": str(row.get("ponto_corte", 743))},
+                    "n_avaliados": {"N": str(n_av)},
                 },
             }
         )
@@ -125,11 +135,12 @@ def publish_kafka(events: list[dict]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--n", type=int, default=10)
+    parser.add_argument("--fonte", default="sample", choices=["sample", "raw"])
     parser.add_argument("--kafka", action="store_true")
     args = parser.parse_args()
     LOGS.mkdir(parents=True, exist_ok=True)
 
-    events = build_events(n=args.n)
+    events = build_events(n=args.n, fonte=args.fonte)
     path = write_file_sink(events)
     log.info("File sink Bronze: %s (%s eventos)", path, len(events))
     if args.kafka:

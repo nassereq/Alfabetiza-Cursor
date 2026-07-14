@@ -100,7 +100,10 @@ def transform_meta_municipio(df: pd.DataFrame) -> pd.DataFrame:
 
 def transform_indicador(df: pd.DataFrame) -> pd.DataFrame:
     out = df.drop(columns=[c for c in df.columns if c.startswith("_")], errors="ignore")
-    out = _to_numeric(out, ["ano", "pct_alfabetizados", "ponto_corte", "n_avaliados"])
+    out = _to_numeric(
+        out,
+        ["ano", "pct_alfabetizados", "ponto_corte", "n_avaliados", "serie", "rede", "media_portugues"],
+    )
     out["id_municipio"] = out["id_municipio"].astype(str)
     out["id_uf"] = out["id_uf"].astype(str).str.zfill(2)
     out["sigla_uf"] = out["sigla_uf"].astype(str).str.upper().str.strip()
@@ -157,6 +160,19 @@ def run() -> dict:
                     log.info("Mesclados %s eventos streaming na bronze de indicador", len(ev))
 
         treated = fn(raw)
+        # garante FK indicador → município (descarta eventos de outra fonte)
+        if entidade == "indicador_municipio":
+            mun_ids = set(
+                pd.read_parquet(SILVER / "municipio.parquet")["id_municipio"].astype(str)
+            )
+            before = len(treated)
+            treated = treated[treated["id_municipio"].astype(str).isin(mun_ids)].copy()
+            dropped = before - len(treated)
+            if dropped:
+                log.warning(
+                    "Removidos %s indicadores sem município (ex.: eventos antigos)",
+                    dropped,
+                )
         path = write_silver(treated, entidade)
         resultados[entidade] = {"rows": len(treated), "path": str(path)}
         log.info("Silver %s: %s linhas", entidade, len(treated))

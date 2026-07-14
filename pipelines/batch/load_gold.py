@@ -36,21 +36,22 @@ def run() -> dict:
     meta_uf = pd.read_parquet(SILVER / "meta_uf.parquet")
 
     # 1) Indicador por município (fato analítica)
-    gold_mun = integrado[
-        [
-            "ano",
-            "id_municipio",
-            "id_uf",
-            "sigla_uf",
-            "nome_municipio",
-            "pct_alfabetizados",
-            "meta_pct",
-            "gap_meta_pct",
-            "atingiu_meta",
-            "n_avaliados",
-            "ponto_corte",
-        ]
-    ].copy()
+    cols = [
+        "ano",
+        "id_municipio",
+        "id_uf",
+        "sigla_uf",
+        "nome_municipio",
+        "pct_alfabetizados",
+        "meta_pct",
+        "gap_meta_pct",
+        "atingiu_meta",
+        "n_avaliados",
+        "ponto_corte",
+    ]
+    gold_mun = integrado[[c for c in cols if c in integrado.columns]].copy()
+    if "n_avaliados" not in gold_mun.columns:
+        gold_mun["n_avaliados"] = pd.NA
     gold_mun["camada"] = "gold"
     p1 = GOLD / "indicador_alfabetizacao_municipio.parquet"
     gold_mun.to_parquet(p1, index=False)

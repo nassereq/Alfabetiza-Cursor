@@ -21,7 +21,7 @@ Organize o trabalho em estágios. Não pule a ordem na primeira vez.
 | 6 | Git com branches / merges estilo PR | Feito (local) |
 | 7 | Trocar amostras pela Base dos Dados real | **Feito** (municipio/uf + pipeline `--fonte raw`) |
 | 8 | Evidência de cloud (AWS/GCP/Azure) | **A fazer** |
-| 9 | Publicar GitHub com PRs reais | **A fazer** |
+| 9 | Publicar GitHub com PRs reais | **Feito** (https://github.com/nassereq/Alfabetiza-Cursor) |
 | 10 | Vídeo executivo + entrega no AVA | **A fazer** |
 
 - **Estágios 1–6:** como o projeto foi criado (para replicar no futuro).  

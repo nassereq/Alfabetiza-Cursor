@@ -1,0 +1,77 @@
+{
+  "generated_at": "2026-07-14T19:15:29.946304+00:00",
+  "ponto_corte_saeb": 743,
+  "meta_nacional_2030": 100.0,
+  "brasil": {
+    "anos": [
+      2023,
+      2024
+    ],
+    "taxa_media_por_ano": {
+      "2023": 60.47,
+      "2024": 63.17
+    },
+    "ultimo_ano": 2024,
+    "taxa_media_ultimo": 63.17,
+    "n_municipios_ultimo": 5516,
+    "n_atingiram_meta_ultimo": 2968,
+    "meta_pct_ultimo": 62.0,
+    "gap_meta_ultimo": 1.17,
+    "delta_pp_vs_primeiro_ano": 2.7
+  },
+  "uf": {
+    "ano": 2024,
+    "menor_taxa": [
+      {
+        "sigla_uf": "BA",
+        "pct": 36.56,
+        "gap": -25.44
+      },
+      {
+        "sigla_uf": "SE",
+        "pct": 36.91,
+        "gap": -25.09
+      },
+      {
+        "sigla_uf": "RN",
+        "pct": 42.53,
+        "gap": -19.47
+      }
+    ],
+    "maior_taxa": [
+      {
+        "sigla_uf": "ES",
+        "pct": 78.62,
+        "gap": 16.62
+      },
+      {
+        "sigla_uf": "GO",
+        "pct": 80.26,
+        "gap": 18.26
+      },
+      {
+        "sigla_uf": "CE",
+        "pct": 90.29,
+        "gap": 28.29
+      }
+    ]
+  },
+  "municipio": {
+    "ano": 2024,
+    "n_linhas": 5516,
+    "pct_atingiu_meta": 53.81,
+    "taxa_mediana": 64.28
+  },
+  "evolucao_brasil": [
+    {
+      "ano": 2023,
+      "taxa": 60.47,
+      "delta_pp": null
+    },
+    {
+      "ano": 2024,
+      "taxa": 63.17,
+      "delta_pp": 2.7
+    }
+  ]
+}

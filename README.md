@@ -106,6 +106,18 @@ python -m pipelines.cloud.evidence_bigquery
 
 Gera `reports/cloud_evidence/` com **Job ID** BigQuery. Arquitetura e trade-offs: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md). Infra: [`infra/README.md`](infra/README.md).
 
+## Relatórios
+
+Após a pipeline:
+
+- [`reports/executivo/RELATORIO_EXECUTIVO.md`](reports/executivo/RELATORIO_EXECUTIVO.md) — KPIs Brasil/UF  
+- [`reports/gold_preview/`](reports/gold_preview/) — CSVs Gold para Excel/Power BI  
+- [`reports/cloud_evidence/`](reports/cloud_evidence/) — evidência BigQuery  
+
+```powershell
+python -m pipelines.reports.generate_summary
+```
+
 ## Aplicação em IA
 
 A Gold habilita modelos de predição de alfabetização, análise de desigualdade e apoio a políticas territoriais — sem exigir ML nesta entrega (o enunciado pede o **potencial**).
@@ -114,15 +126,19 @@ A Gold habilita modelos de predição de alfabetização, análise de desigualda
 
 ```text
 Alfabetiza-Cursor/
-  docs/               # negócio, arquitetura, FinOps, roteiro do vídeo
-  notebooks/          # espelho didático 01–04 (medalhão)
-  pipelines/batch/    # bronze / silver / gold (+ template Glue)
-  pipelines/streaming/# producer / consumer
-  quality/            # validações
-  sql/                # MySQL dimensões
-  data/sample|bronze|silver|gold/
-  infra/              # notas AWS / Kafka
-  references/         # mapa das aulas POSTECH
+  docs/                 # índice em docs/INDEX.md
+  notebooks/            # espelho didático medalhão
+  pipelines/batch/      # bronze / silver / gold / BD / Glue
+  pipelines/streaming/  # producer / consumer
+  pipelines/cloud/      # evidência BigQuery
+  pipelines/reports/    # relatório executivo + preview Gold
+  quality/              # validações
+  sql/                  # MySQL dimensões
+  scripts/              # PDFs, PPTX, atalhos
+  data/sample|raw|bronze|silver|gold/
+  reports/              # executivo, gold_preview, cloud_evidence
+  infra/                # notas GCP/AWS/Kafka
+  references/           # mapa das aulas POSTECH
   diagrams/
 ```
 

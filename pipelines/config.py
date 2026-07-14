@@ -9,6 +9,10 @@ BRONZE = DATA / "bronze"
 SILVER = DATA / "silver"
 GOLD = DATA / "gold"
 LOGS = ROOT / "logs"
+REPORTS = ROOT / "reports"
+GOLD_PREVIEW = REPORTS / "gold_preview"
+REPORTS_EXEC = REPORTS / "executivo"
+CLOUD_EVIDENCE = REPORTS / "cloud_evidence"
 
 # Ponto de corte Saeb — Pesquisa Alfabetiza Brasil (2023)
 PONTO_CORTE_ALFABETIZACAO = 743
@@ -26,9 +30,9 @@ ENTIDADES = [
 
 # AWS (espelho da aula Glue SOR/SOT/SPEC) — preencher em deploy
 AWS = {
-    "bucket_sor": "alfabetiza-data-sor",      # Bronze
-    "bucket_sot": "alfabetiza-data-sot",      # Silver
-    "bucket_spec": "alfabetiza-data-spec",    # Gold
+    "bucket_sor": "alfabetiza-data-sor",  # Bronze
+    "bucket_sot": "alfabetiza-data-sot",  # Silver
+    "bucket_spec": "alfabetiza-data-spec",  # Gold
     "region": "us-east-1",
 }
 

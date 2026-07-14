@@ -1,18 +1,24 @@
-"""Gera slides da apresentação executiva — Tech Challenge Fase 2."""
+"""Gera slides refinados da apresentação executiva — Tech Challenge Fase 2.
+
+Inclui gráficos a partir de reports/executivo/kpis.json (ou Gold CSV)
+e notas de orador alinhadas ao roteiro do vídeo.
+"""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from pptx import Presentation
+from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
+from pptx.enum.chart import XL_CHART_TYPE
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches, Pt
-
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "Apresentacao_Tech_Challenge_Fase2_Alfabetiza.pptx"
+KPIS_PATH = ROOT / "reports" / "executivo" / "kpis.json"
 
-# Paleta institucional (educação / dados) — sem roxo genérico
 NAVY = RGBColor(0x0B, 0x2C, 0x4A)
 TEAL = RGBColor(0x0D, 0x7A, 0x6F)
 ACCENT = RGBColor(0xE8, 0x7A, 0x2E)
@@ -20,500 +26,424 @@ LIGHT = RGBColor(0xF4, 0xF7, 0xFA)
 MUTED = RGBColor(0x5A, 0x6A, 0x7A)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 DARK = RGBColor(0x1A, 0x1A, 0x1A)
+SOFT = RGBColor(0xE8, 0xEE, 0xF3)
 
 
-def _set_run(run, text: str, size: int, bold: bool = False, color=DARK):
+def _run(p, text, size=18, bold=False, color=DARK):
+    run = p.add_run()
     run.text = text
     run.font.size = Pt(size)
     run.font.bold = bold
     run.font.color.rgb = color
     run.font.name = "Calibri"
+    return run
 
 
-def _add_bg(slide, color=LIGHT):
-    shape = slide.shapes.add_shape(
-        MSO_SHAPE.RECTANGLE, Inches(0), Inches(0), Inches(13.333), Inches(7.5)
-    )
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = color
-    shape.line.fill.background()
+def _bg(slide, color=LIGHT):
+    sh = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(13.333), Inches(7.5))
+    sh.fill.solid()
+    sh.fill.fore_color.rgb = color
+    sh.line.fill.background()
+    # send to back
+    spTree = slide.shapes._spTree
+    sp = sh._element
+    spTree.remove(sp)
+    spTree.insert(2, sp)
 
 
-def _banner(slide, title: str, subtitle: str | None = None):
-    bar = slide.shapes.add_shape(
-        MSO_SHAPE.RECTANGLE, Inches(0), Inches(0), Inches(13.333), Inches(1.15)
-    )
+def _header(slide, title: str, subtitle: str | None = None):
+    bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(13.333), Inches(1.05))
     bar.fill.solid()
     bar.fill.fore_color.rgb = NAVY
     bar.line.fill.background()
-    accent = slide.shapes.add_shape(
-        MSO_SHAPE.RECTANGLE, Inches(0), Inches(1.15), Inches(13.333), Inches(0.08)
-    )
-    accent.fill.solid()
-    accent.fill.fore_color.rgb = TEAL
-    accent.line.fill.background()
-
-    box = slide.shapes.add_textbox(Inches(0.5), Inches(0.28), Inches(12.3), Inches(0.5))
-    p = box.text_frame.paragraphs[0]
-    _set_run(p.add_run(), title, 28, True, WHITE)
+    line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, Inches(1.05), Inches(13.333), Inches(0.07))
+    line.fill.solid()
+    line.fill.fore_color.rgb = TEAL
+    line.line.fill.background()
+    tb = slide.shapes.add_textbox(Inches(0.55), Inches(0.28), Inches(12.2), Inches(0.45))
+    _run(tb.text_frame.paragraphs[0], title, 26, True, WHITE)
     if subtitle:
-        sub = slide.shapes.add_textbox(Inches(0.5), Inches(0.72), Inches(12.3), Inches(0.35))
-        sp = sub.text_frame.paragraphs[0]
-        _set_run(sp.add_run(), subtitle, 14, False, RGBColor(0xB8, 0xC9, 0xD9))
+        sb = slide.shapes.add_textbox(Inches(0.55), Inches(0.68), Inches(12.2), Inches(0.3))
+        _run(sb.text_frame.paragraphs[0], subtitle, 12, False, RGBColor(0xB8, 0xC9, 0xD9))
 
 
-def _bullets(slide, items: list[str], left=0.6, top=1.5, width=12, size=18):
-    box = slide.shapes.add_textbox(Inches(left), Inches(top), Inches(width), Inches(5.5))
-    tf = box.text_frame
-    tf.word_wrap = True
-    for i, item in enumerate(items):
-        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        p.level = 0
-        p.space_after = Pt(10)
-        _set_run(p.add_run(), "•  " + item, size, False, DARK)
-
-
-def _footer(slide, page: int, total: int):
-    box = slide.shapes.add_textbox(Inches(0.5), Inches(7.1), Inches(12.3), Inches(0.3))
-    p = box.text_frame.paragraphs[0]
-    _set_run(
-        p.add_run(),
-        f"Tech Challenge Fase 2 · Alfabetiza-Cursor · nassereq/Alfabetiza-Cursor  ·  {page}/{total}",
+def _footer(slide, n: int, total: int):
+    tb = slide.shapes.add_textbox(Inches(0.55), Inches(7.12), Inches(12.2), Inches(0.25))
+    _run(
+        tb.text_frame.paragraphs[0],
+        f"Alfabetiza-Cursor · FIAP POSTECH · github.com/nassereq/Alfabetiza-Cursor · {n}/{total}",
         10,
         False,
         MUTED,
     )
 
 
-def _card(slide, left, top, width, height, title: str, body: str, color=TEAL):
-    shape = slide.shapes.add_shape(
-        MSO_SHAPE.ROUNDED_RECTANGLE, Inches(left), Inches(top), Inches(width), Inches(height)
-    )
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = WHITE
-    shape.line.color.rgb = RGBColor(0xD0, 0xD8, 0xE0)
-    tip = slide.shapes.add_shape(
-        MSO_SHAPE.RECTANGLE, Inches(left), Inches(top), Inches(0.12), Inches(height)
-    )
+def _notes(slide, text: str):
+    slide.notes_slide.notes_text_frame.text = text
+
+
+def _bullets(slide, items: list[str], top=1.4, size=17, left=0.6, width=12.1):
+    box = slide.shapes.add_textbox(Inches(left), Inches(top), Inches(width), Inches(5.4))
+    tf = box.text_frame
+    tf.word_wrap = True
+    for i, item in enumerate(items):
+        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        p.space_after = Pt(8)
+        _run(p, "•  " + item, size, False, DARK)
+
+
+def _card(slide, left, top, w, h, title, body, color=TEAL):
+    sh = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(left), Inches(top), Inches(w), Inches(h))
+    sh.fill.solid()
+    sh.fill.fore_color.rgb = WHITE
+    sh.line.color.rgb = SOFT
+    tip = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(left), Inches(top), Inches(0.1), Inches(h))
     tip.fill.solid()
     tip.fill.fore_color.rgb = color
     tip.line.fill.background()
-    t = slide.shapes.add_textbox(Inches(left + 0.25), Inches(top + 0.15), Inches(width - 0.4), Inches(0.4))
-    _set_run(t.text_frame.paragraphs[0].add_run(), title, 16, True, NAVY)
-    b = slide.shapes.add_textbox(Inches(left + 0.25), Inches(top + 0.55), Inches(width - 0.4), Inches(height - 0.7))
-    bp = b.text_frame
-    bp.word_wrap = True
-    _set_run(bp.paragraphs[0].add_run(), body, 13, False, MUTED)
+    t = slide.shapes.add_textbox(Inches(left + 0.22), Inches(top + 0.15), Inches(w - 0.35), Inches(0.35))
+    _run(t.text_frame.paragraphs[0], title, 15, True, NAVY)
+    b = slide.shapes.add_textbox(Inches(left + 0.22), Inches(top + 0.55), Inches(w - 0.35), Inches(h - 0.7))
+    tf = b.text_frame
+    tf.word_wrap = True
+    for i, line in enumerate(body.split("\n")):
+        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        p.space_after = Pt(4)
+        _run(p, line, 13, False, MUTED)
+
+
+def _load_kpis() -> dict:
+    if KPIS_PATH.exists():
+        return json.loads(KPIS_PATH.read_text(encoding="utf-8"))
+    # fallbacks didáticos se relatório ainda não rodou
+    return {
+        "brasil": {
+            "ultimo_ano": 2024,
+            "taxa_media_ultimo": 63.17,
+            "n_municipios_ultimo": 5516,
+            "taxa_media_por_ano": {"2023": 60.47, "2024": 63.17},
+            "meta_pct_ultimo": 62.0,
+            "gap_meta_ultimo": 1.17,
+            "delta_pp_vs_primeiro_ano": 2.7,
+        },
+        "uf": {
+            "ano": 2024,
+            "menor_taxa": [
+                {"sigla_uf": "BA", "pct": 36.56, "gap": -25.44},
+                {"sigla_uf": "SE", "pct": 36.91, "gap": -25.09},
+                {"sigla_uf": "RN", "pct": 42.53, "gap": -19.47},
+            ],
+            "maior_taxa": [
+                {"sigla_uf": "ES", "pct": 78.62, "gap": 16.62},
+                {"sigla_uf": "GO", "pct": 80.26, "gap": 18.26},
+                {"sigla_uf": "CE", "pct": 90.29, "gap": 28.29},
+            ],
+        },
+    }
 
 
 def build() -> Path:
+    kpis = _load_kpis()
+    br = kpis.get("brasil", {})
+    uf = kpis.get("uf", {})
+
     prs = Presentation()
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
     blank = prs.slide_layouts[6]
-    slides_meta: list = []
+    slides = []
 
-    # --- 1 capa ---
+    # 1 capa
     s = prs.slides.add_slide(blank)
-    _add_bg(s, NAVY)
-    stripe = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0), Inches(5.8), Inches(13.333), Inches(1.7))
-    stripe.fill.solid()
-    stripe.fill.fore_color.rgb = TEAL
-    stripe.line.fill.background()
-    t = s.shapes.add_textbox(Inches(0.8), Inches(2.0), Inches(11.5), Inches(1.2))
-    _set_run(t.text_frame.paragraphs[0].add_run(), "Pipeline Híbrida Medalhão", 40, True, WHITE)
-    t2 = s.shapes.add_textbox(Inches(0.8), Inches(3.1), Inches(11.5), Inches(0.8))
-    _set_run(
-        t2.text_frame.paragraphs[0].add_run(),
-        "Indicador Criança Alfabetizada — Tech Challenge Fase 2",
-        24,
-        False,
-        RGBColor(0xC8, 0xE6, 0xE2),
-    )
-    t3 = s.shapes.add_textbox(Inches(0.8), Inches(6.1), Inches(11.5), Inches(1.0))
+    _bg(s, NAVY)
+    band = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, Inches(5.55), Inches(13.333), Inches(1.95))
+    band.fill.solid()
+    band.fill.fore_color.rgb = TEAL
+    band.line.fill.background()
+    t = s.shapes.add_textbox(Inches(0.8), Inches(2.1), Inches(11.7), Inches(0.8))
+    _run(t.text_frame.paragraphs[0], "Pipeline híbrida medalhão", 40, True, WHITE)
+    t2 = s.shapes.add_textbox(Inches(0.8), Inches(3.0), Inches(11.7), Inches(0.6))
+    _run(t2.text_frame.paragraphs[0], "Indicador Criança Alfabetizada · Tech Challenge Fase 2", 22, False, RGBColor(0xC8, 0xE6, 0xE2))
+    t3 = s.shapes.add_textbox(Inches(0.8), Inches(5.85), Inches(11.7), Inches(1.2))
     tf = t3.text_frame
-    _set_run(tf.paragraphs[0].add_run(), "POSTECH / FIAP — AI Scientist", 16, True, WHITE)
+    _run(tf.paragraphs[0], "POSTECH / FIAP — AI Scientist", 16, True, WHITE)
     p = tf.add_paragraph()
-    _set_run(p.add_run(), "Engenharia de dados para política pública educacional · github.com/nassereq/Alfabetiza-Cursor", 14, False, WHITE)
-    slides_meta.append(s)
+    _run(p, "Dados públicos → evidência para gestão educacional até 2030", 14, False, WHITE)
+    p = tf.add_paragraph()
+    _run(p, "github.com/nassereq/Alfabetiza-Cursor", 13, False, WHITE)
+    _notes(s, "Abertura: apresentar o projeto como engenharia de dados a serviço da política pública de alfabetização.")
+    slides.append(s)
 
-    # --- 2 agenda ---
+    # 2 agenda
     s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Agenda")
+    _bg(s)
+    _header(s, "Agenda")
     _bullets(
         s,
         [
-            "Introdução e objetivo da entrega",
-            "Contextualização: Compromisso Nacional Criança Alfabetizada",
-            "O problema de dados e o papel da engenharia",
-            "Ferramentas e stack tecnológica",
-            "O projeto: arquitetura híbrida e medalhão",
-            "Resultados na camada Gold",
+            "Contexto e problema de negócio",
+            "Ferramentas e arquitetura da solução",
+            "Como o projeto funciona (medalhão)",
+            "Resultados Gold — Brasil e UFs",
             "Qualidade, FinOps e evidência em nuvem",
-            "Potencial de IA e otimizações futuras",
-            "Repositório, entregáveis e fechamento",
+            "Potencial de IA e otimizações",
+            "Entregáveis e fechamento",
         ],
         size=18,
     )
-    slides_meta.append(s)
+    _notes(s, "Vídeo ≤ 5 min: foque problema → arquitetura → 1 resultado → IA → fechamento.")
+    slides.append(s)
 
-    # --- 3 introdução ---
+    # 3 contexto + problema
     s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Introdução", "Quem somos e o que entregamos")
-    _card(
-        s,
-        0.5,
-        1.6,
-        6.0,
-        2.2,
-        "Papel da equipe",
-        "Atuar como engenharia de dados de uma organização pública: construir a pipeline que transforma dados educacionais em evidência para gestão.",
-        TEAL,
-    )
-    _card(
-        s,
-        6.8,
-        1.6,
-        6.0,
-        2.2,
-        "Objetivo do Tech Challenge",
-        "Pipeline híbrida (batch + streaming) em arquitetura medalhão (Bronze → Silver → Gold), com qualidade, monitoramento, FinOps e preparação para IA.",
-        ACCENT,
-    )
-    _card(
-        s,
-        0.5,
-        4.1,
-        6.0,
-        2.2,
-        "Entrega principal (90%)",
-        "Apresentação executiva ≤ 5 min: problema, arquitetura, valor educacional e potencial de IA — linguagem para liderança, sem código na tela.",
-        NAVY,
-    )
-    _card(
-        s,
-        6.8,
-        4.1,
-        6.0,
-        2.2,
-        "Artefato técnico (10%)",
-        "Repositório GitHub público com evolução por branches/PRs, documentação, pipeline reproduzível e evidência cloud.",
-        TEAL,
-    )
-    slides_meta.append(s)
+    _bg(s)
+    _header(s, "Contexto e problema", "Compromisso Nacional Criança Alfabetizada")
+    _card(s, 0.5, 1.4, 6.0, 5.2, "Contexto", "Ponto de corte Saeb: 743\nIndicador = % alfabetizados\nMeta nacional: 100% até 2030\nFonte: Base dos Dados / Inep\nFoco: 2º ano do EF", TEAL)
+    _card(s, 6.8, 1.4, 6.0, 5.2, "Problema", "Dados fragmentados\n(metas × território × indicador)\n\nSem pipeline integrada,\na gestão não prioriza\nonde agir com evidência.", ACCENT)
+    _notes(s, "Bloco 1 do roteiro (~45s): meta 2030, corte 743, fragmentação dos dados.")
+    slides.append(s)
 
-    # --- 4 contexto ---
+    # 4 ferramentas
     s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Contextualização", "Política pública de alfabetização")
-    _bullets(
-        s,
-        [
-            "Compromisso Nacional Criança Alfabetizada: União, estados, DF e municípios.",
-            "Meta: toda criança alfabetizada até o final do 2º ano do ensino fundamental.",
-            "Pesquisa Alfabetiza Brasil (INEP, 2023): ponto de corte 743 na escala Saeb.",
-            "Indicador Criança Alfabetizada = % de estudantes no patamar de alfabetizados.",
-            "Meta nacional: 100% até 2030 — exige monitoramento territorial contínuo.",
-            "Fonte oficial usada: Base dos Dados / Inep (br_inep_avaliacao_alfabetizacao).",
-        ],
-    )
-    slides_meta.append(s)
-
-    # --- 5 problema ---
-    s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "O problema", "Dados existem — decisão integrada não")
-    _card(
-        s,
-        0.5,
-        1.6,
-        4.0,
-        4.5,
-        "Fragmentação",
-        "Metas (Brasil/UF/município), território, indicador e microdados vivem em silos. Sem integração, a gestão não prioriza onde agir.",
-        ACCENT,
-    )
-    _card(
-        s,
-        4.7,
-        1.6,
-        4.0,
-        4.5,
-        "Risco operacional",
-        "Relatórios retrospectivos isolados não mostram gap meta × resultado nem evolução temporal comparável entre entes.",
-        TEAL,
-    )
-    _card(
-        s,
-        8.9,
-        1.6,
-        4.0,
-        4.5,
-        "O que falta",
-        "Uma pipeline confiável: rastreável (Bronze), tratada (Silver), analítica (Gold), com qualidade, custo controlado e frescor (streaming).",
-        NAVY,
-    )
-    slides_meta.append(s)
-
-    # --- 6 ferramentas ---
-    s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Ferramentas utilizadas", "Stack alinhada às aulas POSTECH")
-    items = [
-        ("Python / Pandas / PyArrow", "Pipeline local, transformação e Parquet"),
-        ("Base dos Dados + BigQuery", "Origem oficial + evidência GCP (job_id)"),
-        ("Arquitetura medalhão", "Bronze / Silver / Gold (SOR / SOT / SPEC)"),
-        ("Kafka / file-sink", "Braço streaming de atualização do indicador"),
-        ("MySQL + SQL", "Dimensões relacionais (aula de BD)"),
-        ("AWS Glue template", "Caminho de deploy cloud da disciplina ETL"),
-        ("GitHub + PRs", "Evolução visível (bronze → gold → cloud)"),
-        ("Qualidade + FinOps", "validate.py, health check, estimativa de custo"),
+    _bg(s)
+    _header(s, "Ferramentas", "Stack alinhada às aulas POSTECH")
+    tools = [
+        ("Python / Pandas / Parquet", "Medalhão local"),
+        ("Base dos Dados + BigQuery", "Origem + evidência GCP"),
+        ("Kafka / file-sink", "Streaming do indicador"),
+        ("MySQL", "Dimensões relacionais"),
+        ("AWS Glue (template)", "Deploy aula ETL"),
+        ("GitHub + PRs", "Evolução auditável"),
+        ("Qualidade + FinOps", "Validate + custo"),
+        ("Reports executivos", "KPI + preview Gold"),
     ]
-    for i, (title, body) in enumerate(items):
-        col = i % 4
-        row = i // 4
-        _card(s, 0.4 + col * 3.2, 1.5 + row * 2.5, 3.05, 2.2, title, body, TEAL if row == 0 else NAVY)
-    slides_meta.append(s)
+    for i, (title, body) in enumerate(tools):
+        _card(s, 0.4 + (i % 4) * 3.2, 1.35 + (i // 4) * 2.7, 3.05, 2.4, title, body, TEAL if i < 4 else NAVY)
+    slides.append(s)
 
-    # --- 7 arquitetura ---
+    # 5 arquitetura
     s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Arquitetura da solução", "Pipeline híbrida batch + streaming")
-    _bullets(
-        s,
-        [
-            "Origens: Base dos Dados (BigQuery), dimensões MySQL, eventos JSON (estilo NoSQL).",
-            "Batch: carga periódica de históricos (município/UF → entidades da pipeline).",
-            "Streaming: producer de eventos do indicador (Kafka ou file-sink na demo).",
-            "Bronze: bruto + metadados (_data_ingestao, _fonte) particionado por data.",
-            "Silver: tipagem, dedup, FKs e integração indicador × meta × município.",
-            "Gold: 3 produtos — indicador municipal, meta×resultado (UF/Brasil), evolução.",
-            "Cloud: evidência real GCP BigQuery; template AWS S3 + Glue (aula ETL).",
-        ],
-        size=17,
-    )
-    slides_meta.append(s)
-
-    # --- 8 projeto fluxo ---
-    s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "O projeto em prática", "Do dado bruto à decisão")
+    _bg(s)
+    _header(s, "Arquitetura", "Batch + streaming → Bronze → Silver → Gold")
     steps = [
-        ("1. Ingestão", "fetch/map Base dos Dados\nserie=2 · rede=5\ntaxa → pct_alfabetizados"),
-        ("2. Bronze", "Parquet bruto\nrastreabilidade\nbatch + eventos"),
-        ("3. Silver", "Limpeza + chaves\nintegrado meta×ind\nqualidade OK"),
-        ("4. Gold", "Município / UF / BR\nevolução temporal\nCSVs para BI"),
+        ("Origens", "BD / MySQL\nEventos JSON"),
+        ("Bronze", "Bruto +\nmetadados"),
+        ("Silver", "Limpeza +\nintegração"),
+        ("Gold", "Município\nUF / Brasil"),
+        ("Consumo", "BI · IA\nGestão"),
     ]
     for i, (title, body) in enumerate(steps):
-        shape = s.shapes.add_shape(
-            MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.45 + i * 3.2), Inches(2.0), Inches(3.0), Inches(3.8)
-        )
-        shape.fill.solid()
-        shape.fill.fore_color.rgb = WHITE
-        shape.line.color.rgb = TEAL
-        tb = s.shapes.add_textbox(Inches(0.6 + i * 3.2), Inches(2.2), Inches(2.7), Inches(0.5))
-        _set_run(tb.text_frame.paragraphs[0].add_run(), title, 18, True, NAVY)
-        bb = s.shapes.add_textbox(Inches(0.6 + i * 3.2), Inches(2.9), Inches(2.7), Inches(2.6))
+        x = 0.45 + i * 2.55
+        sh = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(2.2), Inches(2.3), Inches(3.2))
+        sh.fill.solid()
+        sh.fill.fore_color.rgb = WHITE
+        sh.line.color.rgb = TEAL
+        tb = s.shapes.add_textbox(Inches(x + 0.15), Inches(2.4), Inches(2.0), Inches(0.4))
+        _run(tb.text_frame.paragraphs[0], f"{i+1}. {title}", 15, True, NAVY)
+        bb = s.shapes.add_textbox(Inches(x + 0.15), Inches(3.0), Inches(2.0), Inches(2.0))
         tf = bb.text_frame
         tf.word_wrap = True
         for j, line in enumerate(body.split("\n")):
             p = tf.paragraphs[0] if j == 0 else tf.add_paragraph()
-            _set_run(p.add_run(), line, 14, False, MUTED)
-        if i < 3:
-            arr = s.shapes.add_shape(
-                MSO_SHAPE.RIGHT_ARROW, Inches(3.35 + i * 3.2), Inches(3.6), Inches(0.35), Inches(0.35)
-            )
+            _run(p, line, 13, False, MUTED)
+        if i < len(steps) - 1:
+            arr = s.shapes.add_shape(MSO_SHAPE.RIGHT_ARROW, Inches(x + 2.25), Inches(3.5), Inches(0.28), Inches(0.28))
             arr.fill.solid()
             arr.fill.fore_color.rgb = ACCENT
             arr.line.fill.background()
-    slides_meta.append(s)
+    _notes(s, "Bloco 2 (~90s): explicar híbrido e as três camadas; citar GCP + template AWS.")
+    slides.append(s)
 
-    # --- 9 resultados Brasil ---
+    # 6 resultados Brasil + chart
     s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Resultados — Brasil", "Gold: comparativo meta × resultado")
-    _card(s, 0.5, 1.6, 4.0, 4.8, "2023", "Taxa média: 60,47%\nMunicípios: 4.950\nNa meta: 2.959\nMeta traj.: 56%\nGap: +4,5 p.p.", TEAL)
-    _card(s, 4.7, 1.6, 4.0, 4.8, "2024", "Taxa média: 63,17%\nMunicípios: 5.516\nNa meta: 2.968\nMeta traj.: 62%\nGap: +1,2 p.p.", ACCENT)
+    _bg(s)
+    _header(s, "Resultados — Brasil", "Gold: taxa média municipal")
+    series = br.get("taxa_media_por_ano", {"2023": 60.47, "2024": 63.17})
+    chart_data = CategoryChartData()
+    chart_data.categories = list(series.keys())
+    chart_data.add_series("Taxa média (%)", tuple(series.values()))
+    chart = s.shapes.add_chart(
+        XL_CHART_TYPE.COLUMN_CLUSTERED,
+        Inches(0.5),
+        Inches(1.4),
+        Inches(7.2),
+        Inches(5.3),
+        chart_data,
+    ).chart
+    chart.has_legend = False
+
     _card(
         s,
-        8.9,
-        1.6,
-        4.0,
+        8.0,
+        1.5,
         4.8,
-        "Leitura",
-        "Houve avanço da média nacional (60,5 → 63,2), mas o desafio 2030 (100%) permanece. A Gold torna o gap visível por território.",
-        NAVY,
+        5.1,
+        "Leitura executiva",
+        f"Último ano: {br.get('ultimo_ano', 2024)}\n"
+        f"Taxa: {br.get('taxa_media_ultimo', 63.17)}%\n"
+        f"Municípios: {br.get('n_municipios_ultimo', 5516)}\n"
+        f"Meta ref.: {br.get('meta_pct_ultimo', 62)}%\n"
+        f"Gap: {br.get('gap_meta_ultimo', 1.17)} p.p.\n"
+        f"Δ vs 1º ano: {br.get('delta_pp_vs_primeiro_ano', 2.7)} p.p.\n\n"
+        "Avanço real, mas longe\nde 100% em 2030.",
+        TEAL,
     )
-    slides_meta.append(s)
+    _notes(s, "Mostrar o gráfico: evolução nacional. Enfatizar que Gold transforma dado em prioridade.")
+    slides.append(s)
 
-    # --- 10 resultados UF ---
+    # 7 desigualdade UF chart
     s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Resultados — desigualdade territorial", "2024 · taxa média por UF (amostra)")
-    _card(s, 0.5, 1.6, 6.0, 2.4, "Maior desempenho (2024)", "Ceará 90,3% · Goiás 80,3% · Espírito Santo 78,6%\n(acima da meta didática de 62%)", TEAL)
-    _card(s, 6.8, 1.6, 6.0, 2.4, "Maior desafio (2024)", "Bahia 36,6% · Sergipe 36,9% · Rio Grande do Norte 42,5%\n(gap de ~19 a 25 p.p. vs meta)", ACCENT)
+    _bg(s)
+    _header(s, "Desigualdade territorial", f"UF — {uf.get('ano', 2024)}")
+    menor = uf.get("menor_taxa", [])
+    maior = uf.get("maior_taxa", [])
+    # ordem: menores depois maiores
+    labels = [r["sigla_uf"] for r in menor] + [r["sigla_uf"] for r in maior]
+    values = [r["pct"] for r in menor] + [r["pct"] for r in maior]
+    if labels:
+        cd = CategoryChartData()
+        cd.categories = labels
+        cd.add_series("Taxa média (%)", tuple(values))
+        ch = s.shapes.add_chart(
+            XL_CHART_TYPE.BAR_CLUSTERED,
+            Inches(0.5),
+            Inches(1.35),
+            Inches(8.0),
+            Inches(5.4),
+            cd,
+        ).chart
+        ch.has_legend = False
+    _card(
+        s,
+        8.7,
+        1.5,
+        4.1,
+        5.1,
+        "Mensagem",
+        "Mesma política,\nrealidades distintas.\n\nGold responde:\nquem está abaixo?\nqual a tendência?\nonde priorizar?",
+        ACCENT,
+    )
+    _notes(s, "Contraste CE vs BA: desigualdade como argumento de valor educacional.")
+    slides.append(s)
+
+    # 8 qualidade / cloud / finops
+    s = prs.slides.add_slide(blank)
+    _bg(s)
+    _header(s, "Qualidade, FinOps e nuvem")
+    _card(s, 0.5, 1.4, 4.0, 5.2, "Qualidade", "Duplicidade · nulos · FKs\nConsistência meta×indicador\nquality.passed = true\nSnapshot em reports/", TEAL)
+    _card(s, 4.7, 1.4, 4.0, 5.2, "FinOps", "Parquet particionado\nCompute sob demanda\nBQ ~0,7 MB / job\nAWS Glue sob demanda\nDev local barato", ACCENT)
+    _card(s, 8.9, 1.4, 4.0, 5.2, "Cloud", "GCP BigQuery (job_id)\nTemplate AWS Glue\nreports/cloud_evidence/\nRelatório executivo\nautomático", NAVY)
+    slides.append(s)
+
+    # 9 IA + otimizações
+    s = prs.slides.add_slide(blank)
+    _bg(s)
+    _header(s, "IA e otimizações", "O ativo Gold habilita o próximo ciclo")
     _card(
         s,
         0.5,
-        4.3,
-        12.3,
-        2.2,
-        "Valor para a gestão",
-        "A mesma Gold responde: quem está abaixo da meta? qual a trajetória ano a ano? onde priorizar recomposição de aprendizagem? — de relatório estático para prioridade operacional.",
-        NAVY,
-    )
-    slides_meta.append(s)
-
-    # --- 11 produtos gold ---
-    s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Produtos analíticos (Gold)", "O que o enunciado pede — materializado")
-    _bullets(
-        s,
-        [
-            "indicador_alfabetizacao_municipio — fato municipal com meta, gap e flag atingiu_meta.",
-            "comparativo_meta_resultado_uf / _brasil — agregações para gestão estadual e nacional.",
-            "evolucao_temporal_* — delta em pontos percentuais vs ano anterior.",
-            "Volume processado: ~10,5 mil linhas municipais (2023–2024, serie 2, rede 5).",
-            "Saídas em Parquet + CSV (Excel / Power BI / notebooks).",
-            "Qualidade automatizada: duplicidade, nulos, FKs e consistência meta×indicador.",
-        ],
-    )
-    slides_meta.append(s)
-
-    # --- 12 qualidade finops cloud ---
-    s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Qualidade, FinOps e nuvem", "Requisitos modernos do enunciado")
-    _card(
-        s,
-        0.5,
-        1.6,
-        4.0,
-        4.8,
-        "Qualidade",
-        "quality/validate.py\nSem duplicatas nas chaves\nFKs município→UF\nindicador→município\nAnos cobertos por meta\npassed = true",
+        1.4,
+        6.0,
+        5.2,
+        "Potencial de IA",
+        "Predição de % até 2030\nAnálise de desigualdade\nClusters de vulnerabilidade\nPriorização de intervenção\nAnalytics em linguagem natural",
         TEAL,
     )
     _card(
         s,
-        4.7,
-        1.6,
-        4.0,
-        4.8,
-        "FinOps",
-        "Parquet particionado\nCompute sob demanda\nDev local barato\nBQ ~0,7 MB/job\nAWS Glue sob demanda\n~US$ 5–20/mês (demo)",
+        6.8,
+        1.4,
+        6.0,
+        5.2,
+        "Próximas otimizações",
+        "Microdados reais (alunos)\nNomes IBGE oficiais\nMetas oficiais por ente\nOrquestração (Airflow/SF)\nGlue/S3 em produção\nAlertas de qualidade",
         ACCENT,
     )
-    _card(
-        s,
-        8.9,
-        1.6,
-        4.0,
-        4.8,
-        "Evidência cloud",
-        "GCP BigQuery\nProjeto: alfabetiza-fiap-…\nJob ID versionado\nreports/cloud_evidence/\n+ template AWS Glue",
-        NAVY,
-    )
-    slides_meta.append(s)
+    _notes(s, "Bloco IA (~45s): não entrar em hiperparâmetros; frisar que a engenharia entrega o ativo.")
+    slides.append(s)
 
-    # --- 13 IA ---
+    # 10 entregáveis
     s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Uso de IA — potencial sobre a Gold", "Engenharia entrega o ativo; ciência consome")
+    _bg(s)
+    _header(s, "Entregáveis")
     _bullets(
         s,
         [
-            "Predição: projetar % alfabetizados por município até 2030 (features: histórico, UF, gap, rede).",
-            "Desigualdade: decompor gaps regionais e correlacionar com vulnerabilidade socioeconômica (IBGE/CadÚnico — opcional).",
-            "Clustering: grupos de municípios com perfil semelhante para políticas diferenciadas.",
-            "Priorização: ranking de intervenção com base em distância da meta e tendência temporal.",
-            "LLM / analytics assistida: perguntas em linguagem natural sobre a Gold (camada futura).",
-            "Importante: esta entrega foca a plataforma de dados — modelos são o próximo ciclo.",
-        ],
-        size=17,
-    )
-    slides_meta.append(s)
-
-    # --- 14 otimizações ---
-    s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Possíveis otimizações", "Roadmap técnico e de negócio")
-    _bullets(
-        s,
-        [
-            "Extrair microdados reais da tabela alunos (hoje: amostra sintética alinhada à taxa).",
-            "Enriquecer nomes de município via diretório IBGE (Base dos Dados).",
-            "Metas oficiais por ente (quando publicadas) no lugar da trajetória didática 2030.",
-            "Orquestração (Airflow/Step Functions) e agendamento do batch.",
-            "Deploy completo AWS: buckets SOR/SOT/SPEC + jobs Glue em produção.",
-            "Streaming com Kafka gerenciado + schema registry; DLQ e replay.",
-            "Camada semântica / dbt e catálogo (Data Hub / Unity Catalog).",
-            "Observabilidade: alertas se quality.passed == false ou volume cair > 50%.",
-        ],
-        size=16,
-    )
-    slides_meta.append(s)
-
-    # --- 15 entregáveis ---
-    s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Entregáveis e repositório", "O que enviar no AVA")
-    _bullets(
-        s,
-        [
-            "GitHub público: https://github.com/nassereq/Alfabetiza-Cursor",
-            "PRs mergeados: Base dos Dados (#1) e evidência cloud GCP (#2).",
+            "Repo: https://github.com/nassereq/Alfabetiza-Cursor",
             "Pipeline: python -m pipelines.run_pipeline --fonte raw --with-streaming",
-            "Docs: contexto, arquitetura, FinOps, dicionário, roteiro de vídeo e estágios.",
-            "Evidência cloud: reports/cloud_evidence/ (job_id BigQuery).",
-            "Este deck + vídeo executivo ≤ 5 min (problema → arquitetura → valor → IA).",
+            "Relatório: reports/executivo/RELATORIO_EXECUTIVO.md",
+            "Preview Gold: reports/gold_preview/",
+            "Evidência cloud: reports/cloud_evidence/",
+            "Este deck + vídeo ≤ 5 min no AVA",
         ],
+        size=18,
     )
-    slides_meta.append(s)
+    slides.append(s)
 
-    # --- 16 fechamento ---
+    # 11 conclusão
     s = prs.slides.add_slide(blank)
-    _add_bg(s)
-    _banner(s, "Conclusão", "Evidência para a meta 2030")
+    _bg(s)
+    _header(s, "Conclusão")
     _bullets(
         s,
         [
-            "Problema: alfabetização exige dados integrados para priorizar territórios.",
-            "Solução: pipeline híbrida medalhão com qualidade, FinOps e cloud.",
-            "Resultado: Gold pronta para gestão (município / UF / Brasil) e para IA.",
-            "Próximo passo humano: gravar o vídeo com o roteiro em docs/ROTEIRO_VIDEO.md.",
-            "Obrigado — perguntas?",
+            "Problema: alfabetização exige dados integrados para priorizar.",
+            "Solução: pipeline híbrida medalhão com qualidade e FinOps.",
+            "Resultado: Gold pronta para gestão e para IA.",
+            "Próximo passo: gravar o vídeo com este deck.",
         ],
         size=20,
         top=1.8,
     )
-    slides_meta.append(s)
+    _notes(s, "Fechamento (~30s): evidência até 2030. Obrigado.")
+    slides.append(s)
 
-    # --- 17 thanks ---
+    # 12 obrigado
     s = prs.slides.add_slide(blank)
-    _add_bg(s, NAVY)
-    t = s.shapes.add_textbox(Inches(0.8), Inches(2.5), Inches(11.5), Inches(1))
+    _bg(s, NAVY)
+    t = s.shapes.add_textbox(Inches(0.8), Inches(2.6), Inches(11.7), Inches(1))
     p = t.text_frame.paragraphs[0]
     p.alignment = PP_ALIGN.CENTER
-    _set_run(p.add_run(), "Obrigado", 48, True, WHITE)
-    t2 = s.shapes.add_textbox(Inches(0.8), Inches(3.6), Inches(11.5), Inches(1.2))
+    _run(p, "Obrigado", 48, True, WHITE)
+    t2 = s.shapes.add_textbox(Inches(0.8), Inches(3.7), Inches(11.7), Inches(0.8))
     p2 = t2.text_frame.paragraphs[0]
     p2.alignment = PP_ALIGN.CENTER
-    _set_run(p2.add_run(), "Alfabetiza-Cursor · Tech Challenge Fase 2 · FIAP POSTECH", 18, False, RGBColor(0xC8, 0xE6, 0xE2))
-    t3 = s.shapes.add_textbox(Inches(0.8), Inches(4.5), Inches(11.5), Inches(0.6))
-    p3 = t3.text_frame.paragraphs[0]
-    p3.alignment = PP_ALIGN.CENTER
-    _set_run(p3.add_run(), "github.com/nassereq/Alfabetiza-Cursor", 16, False, WHITE)
-    slides_meta.append(s)
+    _run(p2, "Perguntas? · github.com/nassereq/Alfabetiza-Cursor", 16, False, RGBColor(0xC8, 0xE6, 0xE2))
+    slides.append(s)
 
-    total = len(slides_meta)
-    for i, slide in enumerate(slides_meta, start=1):
-        if i == 1 or i == total:
-            continue
-        _footer(slide, i, total)
+    total = len(slides)
+    for i, slide in enumerate(slides, 1):
+        if i not in (1, total):
+            _footer(slide, i, total)
+
+    # Atualiza espelho markdown
+    md = ROOT / "docs" / "APRESENTACAO_SLIDES.md"
+    md.write_text(
+        "\n".join(
+            [
+                "# Apresentação refinada — Tech Challenge Fase 2",
+                "",
+                f"Arquivo: [`Apresentacao_Tech_Challenge_Fase2_Alfabetiza.pptx`](Apresentacao_Tech_Challenge_Fase2_Alfabetiza.pptx)",
+                "",
+                "Regenerar (após pipeline/relatório para KPIs reais):",
+                "",
+                "```powershell",
+                "python -m pipelines.reports.generate_summary",
+                "python scripts/generate_apresentacao_pptx.py",
+                "```",
+                "",
+                "## Slides (12)",
+                "1. Capa  2. Agenda  3. Contexto e problema  4. Ferramentas",
+                "5. Arquitetura  6. Resultados Brasil (gráfico)  7. Desigualdade UF (gráfico)",
+                "8. Qualidade/FinOps/Cloud  9. IA e otimizações  10. Entregáveis",
+                "11. Conclusão  12. Obrigado",
+                "",
+                "Notas de orador alinhadas a `ROTEIRO_VIDEO.md` (vídeo ≤ 5 min).",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     prs.save(OUT)
@@ -521,5 +451,4 @@ def build() -> Path:
 
 
 if __name__ == "__main__":
-    path = build()
-    print(f"Salvo: {path}")
+    print(f"Salvo: {build()}")
